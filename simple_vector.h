@@ -123,13 +123,15 @@ public:
             size_ = new_size;
         }
         if (new_size > size_ && new_size <= capacity_) {
-            std::fill(this->begin()+size_, this->begin()+new_size, Type());
+            for (auto it = begin()+size_; it != begin()+new_size; ++it) {
+                *it = Type();
+            }
             size_ = new_size;
         }
         if (new_size > capacity_) {
             const size_t new_capacity = std::max(capacity_ * 2, new_size);
             ArrayPtr<Type> new_vector(new_capacity);
-            std::copy(this->cbegin(), this->cend(), new_vector.Get());
+            std::move(this->begin(), this->end(), new_vector.Get());
             array_.swap(new_vector);
             size_ = new_size;
             capacity_ = new_capacity;
@@ -185,14 +187,13 @@ public:
     // Добавляет элемент в конец вектора
     // При нехватке места увеличивает вдвое вместимость вектора
     void PushBack(const Type& item) {
-        this->Resize(size_+1);
-        array_[size_ - 1] = std::move(item);
+        this -> Insert(end(), item);
     }
 
-//    void PushBack(Type&& item) {
-//        this->Resize(size_+1);
-//        array_[size_ - 1] = item;
-//    }
+    //push for rvalue types
+    void PushBack(Type&& item) {
+        this -> Insert(end(), std::move(item));
+    }
 
     // Вставляет значение value в позицию pos.
     // Возвращает итератор на вставленное значение
@@ -203,6 +204,19 @@ public:
         this -> Resize(size_+1);
         std::copy_backward(this->cbegin()+index, this->cend()-1, this->end());
         array_[index] = value;
+
+        return &array_[index];
+    }
+
+    // Вставляет значение value в позицию pos.
+    // Возвращает итератор на вставленное значение
+    // Если перед вставкой значения вектор был заполнен полностью,
+    // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
+    Iterator Insert(ConstIterator pos, Type&& value) {
+        auto index = pos - this->begin();
+        this -> Resize(size_+1);
+        std::move_backward(this->begin()+index, this->end()-1, this->end());
+        array_[index] = std::move(value);
 
         return &array_[index];
     }
@@ -222,6 +236,15 @@ public:
         return const_cast<Iterator>(pos);
     }
 
+    // Удаляет элемент вектора в указанной позиции
+    Iterator Erase(Iterator pos) {
+        assert(!IsEmpty());
+        std::move(std::next(pos), this -> end(), pos);
+        --size_;
+
+        return const_cast<Iterator>(pos);
+    }
+
     // Обменивает значение с другим вектором
     void swap(SimpleVector& other) noexcept {
         array_.swap(other.array_);
@@ -234,7 +257,7 @@ public:
             return;
         }
         ArrayPtr<Type> new_vector(new_capacity);
-        std::copy(this->cbegin(), this->cend(), new_vector.Get());
+        std::move(this->begin(), this->end(), new_vector.Get());
         array_.swap(new_vector);
         capacity_ = new_capacity;
     }
