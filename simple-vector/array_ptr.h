@@ -60,11 +60,6 @@ public:
         return raw_ptr_[index];
     }
 
-//    // Возвращает ссылку на элемент массива с индексом index
-//    Type&& operator[](size_t index) noexcept {
-//        return std::move(raw_ptr_[index]);
-//    }
-
     // Возвращает true, если указатель ненулевой, и false в противном случае
     explicit operator bool() const {
         return raw_ptr_;

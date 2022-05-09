@@ -85,11 +85,13 @@ public:
 
     // Возвращает ссылку на элемент с индексом index
     Type& operator[](size_t index) noexcept {
+        assert(index >= 0 && index < size_);
         return array_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     const Type& operator[](size_t index) const noexcept {
+        assert(index >= 0 && index < size_);
         return array_[index];
     }
 
@@ -119,23 +121,19 @@ public:
     // Изменяет размер массива.
     // При увеличении размера новые элементы получают значение по умолчанию для типа Type
     void Resize(size_t new_size) {
-        if (new_size <= size_) {
-            size_ = new_size;
-        }
         if (new_size > size_ && new_size <= capacity_) {
             for (auto it = begin()+size_; it != begin()+new_size; ++it) {
                 *it = Type();
             }
-            size_ = new_size;
         }
         if (new_size > capacity_) {
             const size_t new_capacity = std::max(capacity_ * 2, new_size);
             ArrayPtr<Type> new_vector(new_capacity);
             std::move(this->begin(), this->end(), new_vector.Get());
             array_.swap(new_vector);
-            size_ = new_size;
             capacity_ = new_capacity;
         }
+        size_ = new_size;
     }
 
     // Возвращает итератор на начало массива
@@ -147,7 +145,7 @@ public:
     // Возвращает итератор на элемент, следующий за последним
     // Для пустого массива может быть равен (или не равен) nullptr
     Iterator end() noexcept {
-        return begin()+size_;
+        return begin() + size_;
     }
 
     // Возвращает константный итератор на начало массива
@@ -159,7 +157,7 @@ public:
     // Возвращает итератор на элемент, следующий за последним
     // Для пустого массива может быть равен (или не равен) nullptr
     ConstIterator end() const noexcept {
-        return cbegin()+size_;
+        return cbegin() + size_;
     }
 
     // Возвращает константный итератор на начало массива
@@ -171,7 +169,7 @@ public:
     // Возвращает итератор на элемент, следующий за последним
     // Для пустого массива может быть равен (или не равен) nullptr
     ConstIterator cend() const noexcept {
-        return cbegin()+size_;
+        return cbegin() + size_;
     }
 
     SimpleVector& operator=(const SimpleVector& rhs) {
@@ -187,12 +185,12 @@ public:
     // Добавляет элемент в конец вектора
     // При нехватке места увеличивает вдвое вместимость вектора
     void PushBack(const Type& item) {
-        this -> Insert(end(), item);
+        this->Insert(end(), item);
     }
 
     //push for rvalue types
     void PushBack(Type&& item) {
-        this -> Insert(end(), std::move(item));
+        this->Insert(end(), std::move(item));
     }
 
     // Вставляет значение value в позицию pos.
@@ -200,8 +198,10 @@ public:
     // Если перед вставкой значения вектор был заполнен полностью,
     // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
     Iterator Insert(ConstIterator pos, const Type& value) {
+        assert(pos >= cbegin() && pos <= cend());
+
         auto index = pos - this->cbegin();
-        this -> Resize(size_+1);
+        this->Resize(size_+1);
         std::copy_backward(this->cbegin()+index, this->cend()-1, this->end());
         array_[index] = value;
 
@@ -213,8 +213,10 @@ public:
     // Если перед вставкой значения вектор был заполнен полностью,
     // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
     Iterator Insert(ConstIterator pos, Type&& value) {
+        assert(pos >= cbegin() && pos <= cend());
+
         auto index = pos - this->begin();
-        this -> Resize(size_+1);
+        this->Resize(size_+1);
         std::move_backward(this->begin()+index, this->end()-1, this->end());
         array_[index] = std::move(value);
 
@@ -230,7 +232,9 @@ public:
     // Удаляет элемент вектора в указанной позиции
     Iterator Erase(ConstIterator pos) {
         assert(!IsEmpty());
-        std::copy(std::next(pos), this -> cend(), const_cast<Iterator>(pos));
+        assert(pos >= cbegin() && pos < cend());
+
+        std::copy(std::next(pos), this->cend(), const_cast<Iterator>(pos));
         --size_;
 
         return const_cast<Iterator>(pos);
@@ -239,7 +243,9 @@ public:
     // Удаляет элемент вектора в указанной позиции
     Iterator Erase(Iterator pos) {
         assert(!IsEmpty());
-        std::move(std::next(pos), this -> end(), pos);
+        assert(pos >= begin() && pos < end());
+
+        std::move(std::next(pos), this->end(), pos);
         --size_;
 
         return const_cast<Iterator>(pos);
