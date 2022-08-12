@@ -135,14 +135,21 @@ public:
     void Resize(size_t new_size) {
         if (new_size > size_ && new_size <= capacity_) {
             for (auto it = begin()+size_; it != begin()+new_size; ++it) {
-                *it = Type();
+                *it = Type{};
             }
         }
         if (new_size > capacity_) {
             const size_t new_capacity = std::max(capacity_ * 2, new_size);
             ArrayPtr<Type> new_vector(new_capacity);
+            // Копируем существующие элементы вектора на новое место
             std::move(this->begin(), this->end(), new_vector.Get());
             items_.swap(new_vector);
+            // заполняем добавленные элементы значением по умолчанию
+            //не использую fill так как должно работать с типами с запрещенным
+            //копирующим приравниванием
+            for (auto it = begin()+size_; it != begin()+new_size; ++it) {
+                *it = Type{};
+            }
             capacity_ = new_capacity;
         }
         size_ = new_size;
@@ -271,9 +278,9 @@ public:
     }
 
 private:
+    ArrayPtr<Type> items_;
     size_t size_ = 0;
     size_t capacity_ = 0;
-    ArrayPtr<Type> items_;
 };
 
 template <typename Type>
